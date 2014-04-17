@@ -3,6 +3,9 @@
  */
 package poker;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * TODO describe me!
  *
@@ -12,7 +15,7 @@ public class CardDTO {
     private final Suit suit;
     private final Value value;
 
-    public CardDTO(final Suit suit, final Value value) {
+    private CardDTO(final Suit suit, final Value value) {
         this.suit = suit;
         this.value = value;
     }
@@ -23,6 +26,16 @@ public class CardDTO {
 
     public Value getValue() {
         return value;
+    }
+
+    public List<CardDTO> deck() {
+        final List<CardDTO> rv = new ArrayList<>(52);
+        for (final Suit s : Suit.values()) {
+            for (final Value v : Value.values()) {
+                rv.add(new CardDTO(s, v));
+            }
+        }
+        return rv;
     }
 
     public static enum Suit {
