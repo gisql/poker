@@ -1,15 +1,15 @@
 /*
  * Copyright
  */
-package pl.gsiql.poker;
+package poker;
 
 /**
  * TODO describe me!
  *
  * @version created on 2014-04-17, 10:59
  */
-public interface Player extends DeathListener {
-    default String name() {
+public interface Player {
+    final default String name() {
         return getClass().getName();
     }
 

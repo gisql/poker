@@ -1,7 +1,7 @@
 /*
  * Copyright
  */
-package pl.gsiql.poker;
+package poker;
 
 /**
  * TODO describe me!

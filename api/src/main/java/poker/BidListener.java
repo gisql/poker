@@ -1,7 +1,7 @@
 /*
  * Copyright
  */
-package pl.gsiql.poker;
+package poker;
 
 /**
  * TODO describe me!
@@ -9,4 +9,5 @@ package pl.gsiql.poker;
  * @version created on 2014-04-17, 11:05
  */
 public interface BidListener {
+    void moveMade(final String player, final MoveDTO move);
 }

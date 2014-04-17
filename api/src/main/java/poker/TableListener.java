@@ -1,7 +1,7 @@
 /*
  * Copyright
  */
-package pl.gsiql.poker;
+package poker;
 
 import java.util.concurrent.atomic.AtomicReference;
 

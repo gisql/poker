@@ -1,14 +1,9 @@
 /*
  * Copyright
  */
-package pl.gsiql.poker;
+package poker;
 
-/**
- * TODO describe me!
- *
- * @version created on 2014-04-17, 12:21
- */
-public interface DeathListener {
+public interface TerminationListener {
     /**
      * Notifies the player about his death.
      * <p/>
@@ -19,4 +14,11 @@ public interface DeathListener {
      * @param reason the reason for the killing.
      */
     void die(final String reason);
+
+    /**
+     * Notifies the player that he lost.
+     * <p/>
+     * Players who lost still can listen to all events.  However, they'll never be asked to make a move.
+     */
+    void lost();
 }
