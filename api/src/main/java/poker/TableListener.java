@@ -1,12 +1,15 @@
 /*
- * Copyright
+ * @(#) TableListener.java
+ *
+ * Copyright 2014 the poker project.
  */
+
 package poker;
 
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * TODO describe me!
+ * Listener being notified about table events.
  *
  * @version created on 2014-04-17, 11:05
  */
@@ -21,5 +24,5 @@ public interface TableListener {
         return config.get();
     }
 
-    void event(final TableAction action);
+    void event(final TableEvent action);
 }

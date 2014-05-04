@@ -1,10 +1,14 @@
 /*
- * Copyright
+ * @(#) BidListener.java
+ *
+ * Copyright 2014 the poker project.
  */
+
 package poker;
 
 /**
- * TODO describe me!
+ * Listener for bidding (or any other bid-like actions performed by players).  Note that only legal moves are
+ * broadcasted.
  *
  * @version created on 2014-04-17, 11:05
  */

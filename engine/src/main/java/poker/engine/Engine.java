@@ -1,148 +1,329 @@
 /*
- * Copyright
+ * @(#) Engine.java
+ *
+ * Copyright 2014 the poker project.
  */
+
 package poker.engine;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 import poker.BidListener;
+import poker.CardDTO;
+import poker.CardEvent;
+import poker.CardListener;
 import poker.ConfigDTO;
 import poker.MoveDTO;
 import poker.Player;
+import poker.TableDTO;
+import poker.TableEvent;
 import poker.TableListener;
-import poker.TerminationListener;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import static java.util.Arrays.asList;
 
 /**
- * TODO describe me!
+ * The poker playing engine.
  *
  * @version created on 2014-04-17, 15:42
  */
 public class Engine {
-    public static final int VERSION = 1;
+    public static final int ANTE = 1;
+    public static final int SMALL_BLIND = 2;
+    public static final int BIG_BLIND = 4;
 
-    private final List<Player> players;
+    private final List<PlayerState> players;
     private final List<BidListener> bidListeners = new ArrayList<>();
     private final List<TableListener> tableListeners = new ArrayList<>();
-    private final List<TerminationListener> terminationListeners = new ArrayList<>();
+    private final List<CardListener> cardListeners = new ArrayList<>();
 
     private final ConfigDTO config;
 
-    public Engine(final List<Player> players) {
-        this.players = players;
-        config = new ConfigDTO(1000, VERSION, 2, 200, true);
+    private Dealer dealer;
+
+    private List<PlayerState> gamePlayers;
+    private final Pot pot = new Pot();
+    private final List<CardDTO> communityCards = new ArrayList<>(5);
+
+    public Engine(final List<Player> players, final ConfigDTO config) {
+        this.config = config;
+        this.players = initPlayers(players);
         for (final Player player : players) {
             if (player instanceof BidListener) {
-                bidListeners.add((BidListener) player);
+                bidListeners.add((BidListener)player);
             }
             if (player instanceof TableListener) {
-                tableListeners.add((TableListener) player);
+                tableListeners.add((TableListener)player);
             }
-            if (player instanceof TerminationListener) {
-                terminationListeners.add((TerminationListener) player);
+            if (player instanceof CardListener) {
+                cardListeners.add((CardListener)player);
             }
         }
+        dealer = new CasinoDealer(1);
+        tableListeners.forEach(p -> p.configChanged(config));
+    }
+
+    private List<PlayerState> initPlayers(final List<Player> players) {
+        final List<PlayerState> rv = new ArrayList<>(players.size());
+        final Set<String> names = new HashSet<>();
+        for (final Player player : players) {
+            rv.add(new PlayerState(player, config.getInitialChips()));
+            names.add(player.name());
+        }
+        if (names.size() != players.size()) {
+            throw new IllegalArgumentException("Player names are not unique");
+        }
+        final int maxPlayers = (52 - 4 - 2 - 2) / 2;
+        if (players.size() > maxPlayers) {
+            throw new IllegalArgumentException("Too many players for one table.  Max is: " + maxPlayers);
+        }
+        return rv;
     }
 
     public void run() {
-        newTable();
+        createTable();
         while (players.size() > 1) {
-            newGame();
-            gameWinner(playAGame());
+            final List<String> winners = playAGame();
+
+            notifyTable(TableEvent.Type.GAME_WON, winners);
+            rewardWinners(winners);
+
+            prepareNewGame();
         }
-        tableWinner(players.get(0));
+        notifyTable(TableEvent.Type.TABLE_CLOSED, asList(players.get(0).getPlayer().name()));
     }
 
-    private void tableWinner(final Player player) {
-        //To change body of created methods use File | Settings | File Templates.
-    }
-
-    private void gameWinner(final Player player) {
-        //To change body of created methods use File | Settings | File Templates.
-    }
-
-    private void newGame() {
-        //To change body of created methods use File | Settings | File Templates.
-    }
-
-    private void newTable() {
-        //To change body of created methods use File | Settings | File Templates.
-    }
-
-    private Player playAGame() {
-        final List<Player> gamePlayers = new ArrayList<>(players);
+    private List<String> playAGame() {
+        gamePlayers = new ArrayList<>(players);
         try {
-            initialPayments(gamePlayers);
-            dealPrivateCards(gamePlayers);
-            roundOfBetting(gamePlayers);
+            initialPayments();
+            dealPrivateCards();
+            roundOfBetting();
 
             dealCommunityCard();
             dealCommunityCard();
             dealCommunityCard();
-            roundOfBetting(gamePlayers);
+            roundOfBetting();
 
             dealCommunityCard();
-            roundOfBetting(gamePlayers);
+            roundOfBetting();
 
             dealCommunityCard();
-            roundOfBetting(gamePlayers);
+            roundOfBetting();
 
-            return showdown(gamePlayers);
+            return showdown();
         } catch (OnePlayerLeftException e) {
             // premature end of game --- the last standing wins
-            return gamePlayers.get(0);
+            return asList(gamePlayers.get(0).getPlayer().name());
         }
     }
 
-    private Player showdown(final List<Player> gamePlayers) {
-        return null;
+    private void rewardWinners(final List<String> in) {
+        final Set<String> winners = new HashSet<>(in);
+
+        final Map<String, Integer> winnings = pot.divide(winners);
+        for (final PlayerState player : players) {
+            final String name = player.getPlayer().name();
+            if (winnings.containsKey(name)) {
+                player.reward(winnings.get(name));
+            }
+        }
+    }
+
+    private void prepareNewGame() {
+        if (players.size() < 2) {
+            return;
+        }
+        players.add(players.remove(0));
+        if (config.isReshuffleAfterGame()) {
+            dealer.shuffle();
+        }
+
+        pot.clear();
+        communityCards.clear();
+
+        notifyTable(TableEvent.Type.GAME_STARTED, playerNames(players));
+    }
+
+    private void createTable() {
+        pot.clear();
+        notifyTable(TableEvent.Type.TABLE_CREATED, playerNames(players));
+    }
+
+    private void notifyTable(final TableEvent.Type eventType, final List<String> names) {
+        final TableEvent te = new TableEvent(eventType, names);
+        tableListeners.forEach(p -> p.event(te));
+    }
+
+    private List<String> playerNames(final List<PlayerState> active) {
+        return active.stream().map(a -> a.getPlayer().name()).collect(Collectors.<String>toList());
+    }
+
+    private List<String> showdown() {
+        final List<PokerHand> hands = new ArrayList<>(gamePlayers.size());
+        for (final PlayerState player : gamePlayers) {
+            final String name = player.getPlayer().name();
+            final PokerHand hand = PokerHand.selectBest(name, communityCards, player.getCards());
+            hands.add(hand);
+            cardListeners.forEach(cl -> cl.event(new CardEvent(CardEvent.Type.HAND_SHOWN, name, player.getCards())));
+        }
+        Collections.sort(hands, Comparator.reverseOrder());
+
+        final List<String> rv = new LinkedList<>();
+        PokerHand last = hands.get(0);
+        rv.add(last.getOwner());
+        for (int i = 1; i < hands.size(); i++) {
+            final PokerHand cur = hands.get(i);
+            if (last.compareTo(cur) != 0) {
+                break;
+            }
+            rv.add(cur.getOwner());
+            last = cur;
+        }
+        return rv;
     }
 
     private void dealCommunityCard() {
-        //To change body of created methods use File | Settings | File Templates.
+        final CardDTO card = dealer.deal();
+        communityCards.add(card);
+        cardListeners.forEach(cl -> cl.event(new CardEvent(CardEvent.Type.COMMUNITY_CARD, "all", asList(card))));
     }
 
-    private void dealPrivateCards(final List<Player> gamePlayers) {
-        //To change body of created methods use File | Settings | File Templates.
+    private void dealPrivateCards() {
+        for (final PlayerState player : gamePlayers) {
+            player.setCards(Arrays.asList(dealer.deal(), dealer.deal()));
+        }
     }
 
-    private void initialPayments(final List<Player> gamePlayers) throws OnePlayerLeftException {
-        //To change body of created methods use File | Settings | File Templates.
-    }
-
-    private void roundOfBetting(final List<Player> gamePlayers) throws OnePlayerLeftException {
-        do {
-            final Iterator<Player> itr = gamePlayers.iterator();
-            while (itr.hasNext()) {
-                final Player player = itr.next();
-                final MoveDTO move = player.makeMove(null, null);
-                if (!legal(move)) {
-                    itr.remove();
-                    killPlayer(player);
-                    continue;
-                }
-                if (move.getType() == MoveDTO.MoveType.FOLD) {
-                    itr.remove();
-                }
-                moveMade(move);
+    /**
+     * Initial payments consist of:<ul> <li>One chip from each of players</li> <li>Two chips from the player next to the
+     * dealer (small blind)</li> <li>Four chips from the player next to the small blind</li> </ul>
+     * <p/>
+     * Note that if there are not enough players (less than 3), the paying goes around to the dealer.  If at any point,
+     * a player is incapable of paying, he is removed from the game (looses).
+     */
+    private void initialPayments() throws OnePlayerLeftException {
+        final Iterator<PlayerState> itr = gamePlayers.iterator();
+        while (itr.hasNext()) {
+            assureTwoPlayers(gamePlayers);
+            final PlayerState player = itr.next();
+            if (!player.attemptPayment(pot, ANTE)) {
+                killPlayer(player, "Not enough money for ante.");
+                itr.remove();
             }
-        } while (!playersEqualised(gamePlayers));
+        }
+        final PlayerState smallBlind = gamePlayers.get(1 % gamePlayers.size());
+        if (!smallBlind.attemptPayment(pot, SMALL_BLIND)) {
+            playerLostGame(smallBlind);
+        }
+        assureTwoPlayers(gamePlayers);
+
+        final PlayerState bigBlind = gamePlayers.get(2 % gamePlayers.size());
+        if (!bigBlind.attemptPayment(pot, BIG_BLIND)) {
+            playerLostGame(bigBlind);
+        }
+        assureTwoPlayers(gamePlayers);
     }
 
-    private void moveMade(final MoveDTO move) {
-        //To change body of created methods use File | Settings | File Templates.
+    private void playerLostGame(final PlayerState player) {
+        if (gamePlayers.contains(player)) {
+            gamePlayers.remove(player);
+        }
+        final String name = player.getPlayer().name();
+        pot.removePlayer(name);
+        player.lost();
+        notifyTable(TableEvent.Type.PLAYER_LOST, asList(name));
     }
 
-    private void killPlayer(final Player player) {
+    private void roundOfBetting() throws OnePlayerLeftException {
+        do {
+            final Iterator<PlayerState> itr = gamePlayers.iterator();
+            while (itr.hasNext()) {
+                assureTwoPlayers(gamePlayers);
+
+                final PlayerState player = itr.next();
+                final int chipsDelta = pot.maxContribution() - pot.playersContribution(player.getPlayer().name());
+                final TableDTO table = new TableDTO(communityCards, pot.total(), chipsDelta);
+
+                final MoveDTO move = player.getPlayer().makeMove(player.toDTO(), table);
+                if (moveAndCheckIfLast(player, move)) {
+                    itr.remove();
+                    playerLostGame(player);
+                }
+            }
+        } while (!playersEqualised());
+    }
+
+    private void assureTwoPlayers(final List<PlayerState> gamePlayers) throws OnePlayerLeftException {
+        if (gamePlayers.size() == 1) {
+            throw new OnePlayerLeftException();
+        }
+    }
+
+    private boolean moveAndCheckIfLast(final PlayerState player, final MoveDTO move) {
+        if (!legal(move)) {
+            killPlayer(player, "Your move is illegal");
+            return true;
+        }
+
+        final String name = player.getPlayer().name();
+        final int max = pot.maxContribution();
+        final int pc = pot.playersContribution(name);
+        if (move == MoveDTO.FOLD) {
+            bidListeners.forEach(p -> p.moveMade(name, move));
+            return true;
+        } else if (move == MoveDTO.CALL && pc < max) {
+            if (!player.attemptPayment(pot, max - pc)) {
+                killPlayer(player, "Illegal move: not enough money to call");
+                return true;
+            }
+        } else if (move.getType() == MoveDTO.MoveType.RAISE) {
+            if (!player.attemptPayment(pot, max - pc + move.getChips())) {
+                killPlayer(player, "Illegal move: not enough money to raise by " + move.getChips());
+                return true;
+            }
+        } else if (move == MoveDTO.ALL_IN) {
+            throw new IllegalStateException("All in not implemented in this version and should be filter out by legality check");
+        }
+        bidListeners.forEach(p -> p.moveMade(name, move));
+        return false;
+    }
+
+    private void killPlayer(final PlayerState player, final String reason) {
         players.remove(player);
+        notifyTable(TableEvent.Type.PLAYER_REMOVED, asList(player.getPlayer().name()));
+        player.killed(reason);
     }
 
     private boolean legal(final MoveDTO move) {
-        return false;  //To change body of created methods use File | Settings | File Templates.
+        switch (move.getType()) {
+        case ALL_IN:
+            return false;   // all in not implemented
+        case RAISE:
+            return config.getMaximumBet() < 1 || move.getChips() <= config.getMaximumBet();
+        case CALL:
+            return true;
+        case FOLD:
+            return true;
+        default:
+            throw new IllegalStateException("Unknown move type: " + move.getType());
+        }
     }
 
-    private boolean playersEqualised(final List<Player> gamePlayers) {
-        return false;  //To change body of created methods use File | Settings | File Templates.
+    private boolean playersEqualised() {
+        return pot.equalised();
+    }
+
+    public void setDealer(final Dealer dealer) {
+        this.dealer = dealer;
     }
 }

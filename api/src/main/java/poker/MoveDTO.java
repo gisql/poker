@@ -1,10 +1,13 @@
 /*
- * Copyright
+ * @(#) MoveDTO.java
+ *
+ * Copyright 2014 the poker project.
  */
+
 package poker;
 
 /**
- * TODO describe me!
+ * Immutable DTO describing a single move.
  *
  * @version created on 2014-04-17, 11:25
  */
@@ -23,6 +26,11 @@ public class MoveDTO {
 
     public static MoveDTO raise(final int chips) {
         return new MoveDTO(chips, MoveType.RAISE);
+    }
+
+    @Override
+    public String toString() {
+        return type + "(" + chips + ')';
     }
 
     public static enum MoveType {

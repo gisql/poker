@@ -1,13 +1,16 @@
 /*
- * Copyright
+ * @(#) PlayerStateDTO.java
+ *
+ * Copyright 2014 the poker project.
  */
+
 package poker;
 
 import java.util.Collections;
 import java.util.List;
 
 /**
- * TODO describe me!
+ * DTO describing the current state of the player.
  *
  * @version created on 2014-04-17, 11:26
  */

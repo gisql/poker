@@ -1,15 +1,18 @@
 /*
- * Copyright
+ * @(#) Player.java
+ *
+ * Copyright 2014 the poker project.
  */
+
 package poker;
 
 /**
- * TODO describe me!
+ * Core interface to be implemented by players (a minimum to be called 'player').
  *
  * @version created on 2014-04-17, 10:59
  */
 public interface Player {
-    final default String name() {
+    default String name() {
         return getClass().getName();
     }
 
