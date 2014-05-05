@@ -14,7 +14,7 @@ import java.util.List;
  *
  * @version created on 2014-04-17, 11:35
  */
-public class TableEvent {
+public class TableEvent extends BaseEvent {
     private final Type type;
     private final List<String> players;
 

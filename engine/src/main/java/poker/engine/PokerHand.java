@@ -9,7 +9,6 @@ package poker.engine;
 import poker.CardDTO;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiPredicate;
@@ -20,7 +19,7 @@ import java.util.stream.Collectors;
  *
  * @version created on 04/05/14, 14:18
  */
-public class PokerHand implements Comparable<PokerHand> {
+class PokerHand implements Comparable<PokerHand> {
     public static final BiP FALSE = (a, b) -> false;
 
     private final String owner;
@@ -63,7 +62,7 @@ public class PokerHand implements Comparable<PokerHand> {
 
     @Override
     public String toString() {
-        return Arrays.toString(cards.toArray(new CardDTO[cards.size()])) + ": " + type.name().replace("_", " ");
+        return CardDTO.toString(cards) + ": " + type.name().replace("_", " ");
     }
 
     private static List<CardDTO> groups(final List<CardDTO> in, int... sizes) {

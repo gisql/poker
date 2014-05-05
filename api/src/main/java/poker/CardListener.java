@@ -12,5 +12,8 @@ package poker;
  * @version created on 2014-05-04, 23:00
  */
 public interface CardListener {
-    void event(final CardEvent event);
+    /**
+     * Triggered on any card movements.
+     */
+    void cardsChanged(final CardEvent event);
 }

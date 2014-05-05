@@ -120,8 +120,8 @@ class TableObserver implements FoldingPlayer, TableListener {
     private final List<TableEvent> actions = new LinkedList<>();
 
     @Override
-    public void event(final TableEvent action) {
-        actions.add(action);
+    public void tableChanged(final TableEvent event) {
+        actions.add(event);
     }
 
     List<TableEvent> getActions() {

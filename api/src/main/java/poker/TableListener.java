@@ -24,5 +24,5 @@ public interface TableListener {
         return config.get();
     }
 
-    void event(final TableEvent action);
+    void tableChanged(final TableEvent event);
 }

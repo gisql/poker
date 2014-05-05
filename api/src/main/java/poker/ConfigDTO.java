@@ -22,6 +22,16 @@ public class ConfigDTO {
         this.reshuffleAfterGame = reshuffleAfterGame;
     }
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("ConfigDTO{");
+        sb.append("maximumBet=").append(maximumBet);
+        sb.append(", initialChips=").append(initialChips);
+        sb.append(", reshuffleAfterGame=").append(reshuffleAfterGame);
+        sb.append('}');
+        return sb.toString();
+    }
+
     public int getInitialChips() {
         return initialChips;
     }

@@ -7,6 +7,7 @@
 package poker;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,10 +18,10 @@ import java.util.Map;
  * @version created on 2014-04-17, 14:40
  */
 public final class CardDTO implements Comparable<CardDTO> {
+    private static final List<CardDTO> DECK;
+
     private final Suit suit;
     private final Value value;
-
-    private final static List<CardDTO> DECK;
 
     static {
         DECK = new ArrayList<>(52);
@@ -94,6 +95,13 @@ public final class CardDTO implements Comparable<CardDTO> {
     public String toString() {
         // 2009 is 'thin space'
         return value + "\u2009" + suit;
+    }
+
+    /**
+     * Renders a string representation of a list of cards
+     */
+    public static String toString(final List<CardDTO> cards) {
+        return Arrays.toString(cards.toArray(new CardDTO[cards.size()]));
     }
 
     public Suit getSuit() {

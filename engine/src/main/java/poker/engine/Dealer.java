@@ -13,7 +13,7 @@ import poker.CardDTO;
  *
  * @version created on 26/04/14, 10:03
  */
-public interface Dealer {
+interface Dealer {
     /**
      * Burns a card from the top of the dealing deck.
      * <p/>

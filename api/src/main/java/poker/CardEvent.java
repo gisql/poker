@@ -6,7 +6,6 @@
 
 package poker;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -15,7 +14,7 @@ import java.util.List;
  *
  * @version created on 2014-05-04, 23:00
  */
-public class CardEvent {
+public class CardEvent extends BaseEvent {
     private final Type type;
     private final String player;
     private final List<CardDTO> cards;
@@ -28,7 +27,7 @@ public class CardEvent {
 
     @Override
     public String toString() {
-        return player + " " + type.name() + " " + Arrays.toString(cards.toArray(new CardDTO[cards.size()]));
+        return player + " " + type.name().replace("_", " ") + ": " + CardDTO.toString(cards);
     }
 
     public List<CardDTO> getCards() {
@@ -44,6 +43,8 @@ public class CardEvent {
     }
 
     public static enum Type {
-        COMMUNITY_CARD, PRIVATE_CARD, HAND_SHOWN
+        COMMUNITY_CARD,
+        PRIVATE_CARD,
+        HAND_SHOWN
     }
 }

@@ -6,6 +6,7 @@
 
 package poker.engine;
 
+import poker.BidEvent;
 import poker.BidListener;
 import poker.CardDTO;
 import poker.CardEvent;
@@ -22,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -58,18 +58,22 @@ public class Engine {
         this.config = config;
         this.players = initPlayers(players);
         for (final Player player : players) {
-            if (player instanceof BidListener) {
-                bidListeners.add((BidListener)player);
-            }
-            if (player instanceof TableListener) {
-                tableListeners.add((TableListener)player);
-            }
-            if (player instanceof CardListener) {
-                cardListeners.add((CardListener)player);
-            }
+            registerObserver(player);
         }
         dealer = new CasinoDealer(1);
         tableListeners.forEach(p -> p.configChanged(config));
+    }
+
+    public void registerObserver(final Object observer) {
+        if (observer instanceof BidListener) {
+            bidListeners.add((BidListener)observer);
+        }
+        if (observer instanceof TableListener) {
+            tableListeners.add((TableListener)observer);
+        }
+        if (observer instanceof CardListener) {
+            cardListeners.add((CardListener)observer);
+        }
     }
 
     private List<PlayerState> initPlayers(final List<Player> players) {
@@ -161,7 +165,7 @@ public class Engine {
 
     private void notifyTable(final TableEvent.Type eventType, final List<String> names) {
         final TableEvent te = new TableEvent(eventType, names);
-        tableListeners.forEach(p -> p.event(te));
+        tableListeners.forEach(p -> p.tableChanged(te));
     }
 
     private List<String> playerNames(final List<PlayerState> active) {
@@ -174,7 +178,7 @@ public class Engine {
             final String name = player.getPlayer().name();
             final PokerHand hand = PokerHand.selectBest(name, communityCards, player.getCards());
             hands.add(hand);
-            cardListeners.forEach(cl -> cl.event(new CardEvent(CardEvent.Type.HAND_SHOWN, name, player.getCards())));
+            cardListeners.forEach(cl -> cl.cardsChanged(new CardEvent(CardEvent.Type.HAND_SHOWN, name, player.getCards())));
         }
         Collections.sort(hands, Comparator.reverseOrder());
 
@@ -195,7 +199,7 @@ public class Engine {
     private void dealCommunityCard() {
         final CardDTO card = dealer.deal();
         communityCards.add(card);
-        cardListeners.forEach(cl -> cl.event(new CardEvent(CardEvent.Type.COMMUNITY_CARD, "all", asList(card))));
+        cardListeners.forEach(cl -> cl.cardsChanged(new CardEvent(CardEvent.Type.COMMUNITY_CARD, "all", asList(card))));
     }
 
     private void dealPrivateCards() {
@@ -212,96 +216,95 @@ public class Engine {
      * a player is incapable of paying, he is removed from the game (looses).
      */
     private void initialPayments() throws OnePlayerLeftException {
-        final Iterator<PlayerState> itr = gamePlayers.iterator();
-        while (itr.hasNext()) {
-            assureTwoPlayers(gamePlayers);
-            final PlayerState player = itr.next();
+        for (final PlayerState player : new ArrayList<>(gamePlayers)) {
+            assureTwoPlayers();
             if (!player.attemptPayment(pot, ANTE)) {
                 killPlayer(player, "Not enough money for ante.");
-                itr.remove();
             }
         }
+
         final PlayerState smallBlind = gamePlayers.get(1 % gamePlayers.size());
         if (!smallBlind.attemptPayment(pot, SMALL_BLIND)) {
-            playerLostGame(smallBlind);
+            playerLostGame(smallBlind, "Not enough money for small blind");
         }
-        assureTwoPlayers(gamePlayers);
+        assureTwoPlayers();
 
         final PlayerState bigBlind = gamePlayers.get(2 % gamePlayers.size());
         if (!bigBlind.attemptPayment(pot, BIG_BLIND)) {
-            playerLostGame(bigBlind);
+            playerLostGame(bigBlind, "Not enough money for big blind");
         }
-        assureTwoPlayers(gamePlayers);
+        assureTwoPlayers();
     }
 
-    private void playerLostGame(final PlayerState player) {
+    private void killPlayer(final PlayerState player, final String reason) {
+        players.remove(player);
+        removeFromGame(player);
+
+        notifyTable(TableEvent.Type.PLAYER_REMOVED, asList(player.getPlayer().name()));
+        player.killed(reason);
+    }
+
+    private void playerLostGame(final PlayerState player, final String reason) {
+        removeFromGame(player);
+
+        notifyTable(TableEvent.Type.PLAYER_LOST, asList(player.getPlayer().name()));
+        player.lost(reason);
+    }
+
+    private void removeFromGame(final PlayerState player) {
         if (gamePlayers.contains(player)) {
             gamePlayers.remove(player);
         }
-        final String name = player.getPlayer().name();
-        pot.removePlayer(name);
-        player.lost();
-        notifyTable(TableEvent.Type.PLAYER_LOST, asList(name));
+        pot.removePlayer(player.getPlayer().name());
     }
 
     private void roundOfBetting() throws OnePlayerLeftException {
         do {
-            final Iterator<PlayerState> itr = gamePlayers.iterator();
-            while (itr.hasNext()) {
-                assureTwoPlayers(gamePlayers);
+            for (final PlayerState player : new ArrayList<>(gamePlayers)) {
+                assureTwoPlayers();
 
-                final PlayerState player = itr.next();
                 final int chipsDelta = pot.maxContribution() - pot.playersContribution(player.getPlayer().name());
                 final TableDTO table = new TableDTO(communityCards, pot.total(), chipsDelta);
 
                 final MoveDTO move = player.getPlayer().makeMove(player.toDTO(), table);
-                if (moveAndCheckIfLast(player, move)) {
-                    itr.remove();
-                    playerLostGame(player);
-                }
+                moveMade(player, move);
             }
         } while (!playersEqualised());
     }
 
-    private void assureTwoPlayers(final List<PlayerState> gamePlayers) throws OnePlayerLeftException {
+    private void assureTwoPlayers() throws OnePlayerLeftException {
         if (gamePlayers.size() == 1) {
             throw new OnePlayerLeftException();
         }
     }
 
-    private boolean moveAndCheckIfLast(final PlayerState player, final MoveDTO move) {
+    private void moveMade(final PlayerState player, final MoveDTO move) {
         if (!legal(move)) {
             killPlayer(player, "Your move is illegal");
-            return true;
+            return;
         }
 
         final String name = player.getPlayer().name();
         final int max = pot.maxContribution();
         final int pc = pot.playersContribution(name);
         if (move == MoveDTO.FOLD) {
-            bidListeners.forEach(p -> p.moveMade(name, move));
-            return true;
+            bidListeners.forEach(p -> p.bidMade(new BidEvent(name, move)));
+            playerLostGame(player, "Player folded");
+            return;
         } else if (move == MoveDTO.CALL && pc < max) {
             if (!player.attemptPayment(pot, max - pc)) {
                 killPlayer(player, "Illegal move: not enough money to call");
-                return true;
+                return;
             }
         } else if (move.getType() == MoveDTO.MoveType.RAISE) {
             if (!player.attemptPayment(pot, max - pc + move.getChips())) {
                 killPlayer(player, "Illegal move: not enough money to raise by " + move.getChips());
-                return true;
+                return;
             }
         } else if (move == MoveDTO.ALL_IN) {
             throw new IllegalStateException("All in not implemented in this version and should be filter out by legality check");
         }
-        bidListeners.forEach(p -> p.moveMade(name, move));
-        return false;
-    }
-
-    private void killPlayer(final PlayerState player, final String reason) {
-        players.remove(player);
-        notifyTable(TableEvent.Type.PLAYER_REMOVED, asList(player.getPlayer().name()));
-        player.killed(reason);
+        bidListeners.forEach(p -> p.bidMade(new BidEvent(name, move)));
     }
 
     private boolean legal(final MoveDTO move) {

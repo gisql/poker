@@ -11,10 +11,10 @@ import poker.CardEvent;
 import poker.CardListener;
 import poker.Player;
 import poker.PlayerStateDTO;
+import poker.TerminationEvent;
 import poker.TerminationListener;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -40,9 +40,7 @@ class PlayerState {
 
     @Override
     public String toString() {
-        final CardDTO[] cds = cards.toArray(new CardDTO[cards.size()]);
-        Arrays.sort(cds);
-        return player.name() + "(" + chips + ") " + Arrays.toString(cds);
+        return player.name() + "(" + chips + ") " + CardDTO.toString(cards);
     }
 
     /**
@@ -67,15 +65,15 @@ class PlayerState {
         this.chips += chips;
     }
 
-    public void lost() {
+    public void lost(final String reason) {
         if (player instanceof TerminationListener) {
-            ((TerminationListener)player).lost();
+            ((TerminationListener)player).terminatedBy(TerminationEvent.defeat(reason));
         }
     }
 
     public void killed(final String reason) {
         if (player instanceof TerminationListener) {
-            ((TerminationListener)player).die(reason);
+            ((TerminationListener)player).terminatedBy(TerminationEvent.death(reason));
         }
     }
 
@@ -86,7 +84,7 @@ class PlayerState {
     public void setCards(final List<CardDTO> cards) {
         this.cards = cards;
         if (player instanceof CardListener) {
-            ((CardListener)player).event(new CardEvent(CardEvent.Type.PRIVATE_CARD, player.name(), cards));
+            ((CardListener)player).cardsChanged(new CardEvent(CardEvent.Type.PRIVATE_CARD, player.name(), cards));
         }
     }
 
