@@ -100,6 +100,46 @@ public class EngineTest {
         Assert.assertEquals(won.getPlayers().get(0), "AlwaysCallingPlayer1", "First game should win player 1");
     }
 
+    @Test(expectedExceptions = TestGameEndException.class)
+    public void testTableStatus() throws Exception {
+        final AtomicInteger movesMade = new AtomicInteger();
+        final Player ender = (pi, table) -> {
+            final int mm = movesMade.incrementAndGet();
+            if (mm >= 5) {
+                Assert.assertEquals(mm, 5, "Ender should be the 1st in the new round");
+                Assert.assertEquals(pi.getChipsLeft(), 95, "Ender should have 99 chips");
+                Assert.assertEquals(table.getPot(), 4 + 2 + 4 + 3 * 4 + 2 * 10 - 2, "Pot for Big should be ANTE + SMALL + BIG + 3 * CALL + 2 * RAISE(10) - SMALL");
+                throw new TestGameEndException();
+            }
+            Assert.assertEquals(mm, 1, "Ender should be the 1st to make a move");
+            Assert.assertEquals(pi.getChipsLeft(), 99, "Ender should have 99 chips");
+            Assert.assertEquals(table.getPot(), 4 + 2 + 4, "Pot for ender should be ANTE + SMALL + BIG");
+            return MoveDTO.CALL;
+        };
+        final Player dealer = (pi, table) -> {
+            Assert.assertEquals(pi.getChipsLeft(), 99, "Dealer should have 99 chips");
+            Assert.assertEquals(table.getPot(), 4 + 2 + 4 + 4, "Pot for dealer should be ANTE + SMALL + BIG + 1 * CALL");
+            Assert.assertEquals(movesMade.incrementAndGet(), 2, "Dealer should be 2nd to make a move");
+            return MoveDTO.CALL;
+        };
+        final Player small = (pi, table) -> {
+            Assert.assertEquals(pi.getChipsLeft(), 97, "Small should have 99 chips");
+            Assert.assertEquals(table.getPot(), 4 + 2 + 4 + 2 * 4, "Pot for Small should be ANTE + SMALL + BIG + 2 * CALL");
+            Assert.assertEquals(movesMade.incrementAndGet(), 3, "Small should be 3rd to make a move");
+            return MoveDTO.raise(10);
+        };
+        final Player big = (pi, table) -> {
+            Assert.assertEquals(pi.getChipsLeft(), 95, "Big should have 99 chips");
+            Assert.assertEquals(table.getPot(), 4 + 2 + 4 + 3 * 4 + 10 - 2, "Pot for Big should be ANTE + SMALL + BIG + 3 * CALL + RAISE(10) - SMALL");
+            Assert.assertEquals(movesMade.incrementAndGet(), 4, "Big should be 4th to make a move");
+            return MoveDTO.CALL;
+        };
+
+        final Engine engine = new Engine(Arrays.asList(dealer, small, big, ender), new ConfigDTO(100, -1, true));
+        engine.registerObserver((AllConsumingListener)System.out::println);
+        engine.run();
+    }
+
     private CardDTO card(final CardDTO.Suit suit, final CardDTO.Value value) {
         return new CardDTO(suit, value);
     }
@@ -114,6 +154,10 @@ interface FoldingPlayer extends Player {
     default MoveDTO makeMove(final PlayerStateDTO pi, final TableDTO table) {
         return MoveDTO.FOLD;
     }
+}
+
+class TestGameEndException extends RuntimeException {
+
 }
 
 class TableObserver implements FoldingPlayer, TableListener {

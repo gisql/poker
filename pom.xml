@@ -11,7 +11,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>poker</groupId>
-    <artifactId>poker</artifactId>
+    <artifactId>poker-poker</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <properties>
@@ -23,6 +23,7 @@
     <modules>
         <module>api</module>
         <module>engine</module>
+        <module>player</module>
     </modules>
 
     <dependencies>

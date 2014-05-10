@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -260,7 +261,8 @@ public class Engine {
 
     private void roundOfBetting() throws OnePlayerLeftException {
         do {
-            for (final PlayerState player : new ArrayList<>(gamePlayers)) {
+            final List<PlayerState> playersForRound = playersForBetting();
+            for (final PlayerState player : playersForRound) {
                 assureTwoPlayers();
 
                 final int chipsDelta = pot.maxContribution() - pot.playersContribution(player.getPlayer().name());
@@ -270,6 +272,22 @@ public class Engine {
                 moveMade(player, move);
             }
         } while (!playersEqualised());
+    }
+
+    private List<PlayerState> playersForBetting() {
+        // dealer, small, big, FIRST, ... dealer
+        final List<PlayerState> rv = new ArrayList<>(gamePlayers);
+        final Iterator<PlayerState> itr = rv.iterator();
+        final List<PlayerState> tail = new LinkedList<>();
+        for (int i = 0; i < 3; i++) {
+            if (itr.hasNext()) { // dealer
+                tail.add(itr.next());
+                itr.remove();
+            }
+        }
+        rv.addAll(tail);
+
+        return rv;
     }
 
     private void assureTwoPlayers() throws OnePlayerLeftException {

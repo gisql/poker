@@ -27,10 +27,10 @@ public class TableDTO {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("TableDTO{");
-        sb.append("pot=").append(pot);
-        sb.append(", chipsToCall=").append(chipsToCall);
-        sb.append(", communityCards=").append(CardDTO.toString(communityCards));
+        final StringBuilder sb = new StringBuilder("T{");
+        sb.append(pot);
+        sb.append("/").append(chipsToCall);
+        sb.append(": ").append(CardDTO.toString(communityCards));
         sb.append('}');
         return sb.toString();
     }

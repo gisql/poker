@@ -15,16 +15,11 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>poker-engine</artifactId>
+    <artifactId>poker-player</artifactId>
     <dependencies>
         <dependency>
             <groupId>poker</groupId>
             <artifactId>poker-api</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>poker</groupId>
-            <artifactId>poker-player</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>

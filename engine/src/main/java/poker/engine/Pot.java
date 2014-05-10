@@ -28,6 +28,9 @@ class Pot {
     }
 
     public int maxContribution() {
+        if (contributions.size() == 0) {
+            return 0;
+        }
         return Stream.of(contributions.values().toArray(new AtomicInteger[contributions.values().size()]))
                 .mapToInt(AtomicInteger::get).max().getAsInt();
     }

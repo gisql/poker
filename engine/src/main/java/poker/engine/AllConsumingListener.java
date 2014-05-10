@@ -19,15 +19,10 @@ import poker.TerminationListener;
 /**
  * Trait for channeling all known game events into a single method.
  *
- * @author created by Michal Ostapowicz on 05/05/14, 15:17
+ * @version created on 05/05/14, 15:17
  */
 public interface AllConsumingListener extends BidListener, CardListener, TableListener, TerminationListener {
     void consume(final BaseEvent event);
-/*
-    default void consume(final BaseEvent event){
-        System.out.println(event.getClass().getSimpleName() + ": " + event);
-    }
-*/
 
     @Override
     default void bidMade(final BidEvent event) {

@@ -25,9 +25,9 @@ public class PlayerStateDTO {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("PlayerStateDTO{");
-        sb.append("chipsLeft=").append(chipsLeft);
-        sb.append(", cards=").append(CardDTO.toString(cards));
+        final StringBuilder sb = new StringBuilder("PS{");
+        sb.append(chipsLeft);
+        sb.append(", ").append(CardDTO.toString(cards));
         sb.append('}');
         return sb.toString();
     }
