@@ -24,6 +24,7 @@
         <module>api</module>
         <module>engine</module>
         <module>player</module>
+        <module>tools</module>
     </modules>
 
     <dependencies>

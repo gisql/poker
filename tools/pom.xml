@@ -9,27 +9,18 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>poker</artifactId>
+        <artifactId>poker-poker</artifactId>
         <groupId>poker</groupId>
         <version>1.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>poker-engine</artifactId>
+    <artifactId>poker-tools</artifactId>
+
     <dependencies>
         <dependency>
             <groupId>poker</groupId>
             <artifactId>poker-api</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>poker</groupId>
-            <artifactId>poker-tools</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>poker</groupId>
-            <artifactId>poker-player</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
     </dependencies>

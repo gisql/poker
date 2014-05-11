@@ -75,10 +75,10 @@ public class RandomPlayer implements Player, TableListener, TerminationListener 
         final int selector = ThreadLocalRandom.current().nextInt(100);
         if (selector < foldProbability || max < 0) {
             return MoveDTO.FOLD;
-        } else if (selector < foldProbability + callProbability || ctc == left) {
+        } else if (selector < foldProbability + callProbability || ctc == left || max == 0) {
             return MoveDTO.CALL;
         } else {
-            return MoveDTO.raise(max);
+            return MoveDTO.raise(ThreadLocalRandom.current().nextInt(max) + 1);
         }
     }
 
