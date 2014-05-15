@@ -22,9 +22,9 @@
     </properties>
     <modules>
         <module>api</module>
-        <module>engine</module>
-        <module>player</module>
         <module>tools</module>
+        <module>player</module>
+        <module>engine</module>
     </modules>
 
     <dependencies>

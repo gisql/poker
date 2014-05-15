@@ -6,10 +6,8 @@
 
 package poker.engine;
 
-import poker.ConfigDTO;
-import poker.Player;
-import poker.TableEvent;
-import poker.TableListener;
+import static java.util.Map.Entry.comparingByValue;
+import static java.util.stream.Collectors.toList;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -23,7 +21,10 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
+import poker.ConfigDTO;
+import poker.Player;
+import poker.TableEvent;
+import poker.TableListener;
 
 public class Runner {
     private static final boolean DEBUG = Boolean.getBoolean("debug");
@@ -75,7 +76,7 @@ public class Runner {
         Stream.generate(() -> createEngine(players, twc)).limit(numberOfTables).parallel().forEach(Engine::run);
 
         System.out.println("\nGames finished.  Overall statistics: ");
-        twc.statistics().entrySet().stream().sorted((e1, e2) -> e1.getValue().compareTo(e2.getValue()))
+        twc.statistics().entrySet().stream().sorted(comparingByValue())
                 .forEach(entry -> System.out.println("\t" + entry.getKey() + "\t" + entry.getValue()));
     }
 
@@ -84,9 +85,9 @@ public class Runner {
         try {
             final Class<?> clazz = Class.forName(arr[0]);
             if (arr.length > 1) {
-                return (Player)clazz.getConstructor(String.class).newInstance(arr[1]);
+                return (Player) clazz.getConstructor(String.class).newInstance(arr[1]);
             } else {
-                return (Player)clazz.newInstance();
+                return (Player) clazz.newInstance();
             }
         } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             System.out.println("Player " + name + " disqualified: " + e);
@@ -99,7 +100,7 @@ public class Runner {
         Collections.shuffle(local);
         final Engine engine = new Engine(local, CONFIG);
         if (DEBUG) {
-            engine.registerObserver((AllConsumingListener)System.out::println);
+            engine.registerObserver((AllConsumingListener) System.out::println);
         }
         engine.registerObserver(twc);
         return engine;
