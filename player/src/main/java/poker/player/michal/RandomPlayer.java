@@ -29,7 +29,6 @@ public class RandomPlayer implements Player, TableListener, TerminationListener 
     private final int foldProbability;
     private final int callProbability;
 
-    @SuppressWarnings("UnusedDeclaration")
     public RandomPlayer() {
         this("rp/10/30");
     }
