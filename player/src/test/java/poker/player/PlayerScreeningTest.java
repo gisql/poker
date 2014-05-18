@@ -76,8 +76,10 @@ public class PlayerScreeningTest {
 
     @Test(dataProvider = "classNamesDP")
     public void testConstructorWithStringWorks(final String name) throws Exception {
-        final Constructor<?> strConstructor = Class.forName(name).getConstructor(String.class);
-        if (strConstructor == null) {
+        final Constructor<?> strConstructor;
+        try {
+            strConstructor = Class.forName(name).getConstructor(String.class);
+        } catch (NoSuchMethodException | ClassNotFoundException | SecurityException e) {
             return;
         }
         final Object p = strConstructor.newInstance("test");
@@ -86,10 +88,13 @@ public class PlayerScreeningTest {
 
     @Test(dataProvider = "classNamesDP")
     public void testConstructorWithStringNames(final String name) throws Exception {
-        final Constructor<?> strConstructor = Class.forName(name).getConstructor(String.class);
-        if (strConstructor == null) {
+        final Constructor<?> strConstructor;
+        try {
+            strConstructor = Class.forName(name).getConstructor(String.class);
+        } catch (NoSuchMethodException | ClassNotFoundException | SecurityException e) {
             return;
         }
+
         final Player player = (Player)strConstructor.newInstance("test");
         Assert.assertNotNull(player.name(), "Player name cannot be null");
         Assert.assertFalse(player.name().trim().isEmpty(), "Player name cannot be empty");
