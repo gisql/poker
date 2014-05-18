@@ -54,6 +54,7 @@ public class PlayerScreeningTest {
     public Object[][] classNamesDP() {
         return new Object[][] {
                 {"poker.player.michal.RandomPlayer"},
+                {"poker.player.cyril.BasicPlayer"}
         };
     }
 

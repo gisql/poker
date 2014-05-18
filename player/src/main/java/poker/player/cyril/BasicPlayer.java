@@ -42,6 +42,7 @@ public class BasicPlayer implements Player, TableListener, TerminationListener {
 
 	@Override
 	public MoveDTO makeMove(PlayerStateDTO pi, TableDTO table) {
+		// Ok, he is very basic but he's also a looser! ;-)
 		return MoveDTO.FOLD;
 	}
 
